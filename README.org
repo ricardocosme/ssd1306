@@ -1,0 +1,237 @@
+** SSD1306
+It's a C++11/17 driver to operate the [[file:datasheet.pdf][SSD1306 OLED]] using the I2C interface. This library offers a low level API [[file:include/ssd1306/i2c.hpp][ssd1306/i2c.hpp]] with a basic set of functions that allows any operation on the device. One goal of this work is to provide high level abstractions built on top of the low level API, watch this repository if you're interested on this, it's a ongoing working that is happening now.
+
+**** Low level API (i2c)
+The abstraction ~ssd1306::i2c~ located at [[file:include/ssd1306/i2c.hpp][ssd1306/i2c.hpp]] is a representation of a communication interface using I2C. The protocol is described in the section ~8.1.5 MCU I2C Interface~ of the datasheet. 
+
+***** How it works?
+~i2c~ needs to know three things to open a communication with the device: the pin that represents the bus data signal ~SDA~, the one that represents the bus clock signal ~SCL~ and the ~SA0~ bit that is the slave address of the device, the default value of it is ~0~. 
+
+For example, the following line represents a display with the ~SDA~ connected to ~PB0~, ~SCL~ connected to ~PB2~ and with the ~SA0~ equal to ~0~:
+#+BEGIN_SRC
+  ssd1306::i2c dev{pb0, pb2};
+#+END_SRC
+
+There are five low level methods that allows any operation on the device: ~start_condition()~, ~send_slave_addr()~, ~send_ctrl_byte()~, ~send_byte()~ and ~stop_condition()~. The protocol establish how to use these methods to do two things: 
+
+1. Send commands like one to turn on the display, define the level of contrast or set the location on the screen to print something; 
+2. Send data to be sent to the GDDRAM that represents dots(pixels) on the screen.
+
+And that is it. The section of the datasheet that describes the operations is well written but maybe the steps below can be more friendly to some people as a starting point.
+
+***** The protocol
+1. The first step is to initiate the communication by a *start condition*. The start condition is established by pulling the ~SDA~ from HIGH to LOW while the ~SCL~ stays HIGH.
+2. The second one is to send the *slave address* in conjuction with the read/write bit mode. The read/write bit is always ~0~ representing the write mode, the slave address is a fixed sequence of bits with only one bit named ~SA0~ to be defined. The default value is ~0~. So, in the end, there are two options of bytes to be sent to represent this step: ~0b01111000~ or ~0b01111010~. The bit#1 from the right to the left is the ~SA0~.
+3. The third step is to send a *control byte* to indicate if a command or a data to RAM is beign sent. The control byte has the following form: ~|co|dc|0|0|0|0|0|0|~. Where:
+   1. ~co~ means /Continuation Bit/ and it informs if the next bytes to be sent are only data bytes. The value ~0~ means that all the next bytes are data bytes and the value ~1~ indicates that pairs of (control_byte, data) are will be sent. The last option allows commands and data to GDDRAM to be sent inside one pair of start and stop condition.
+   2. ~dc~ means /Data or command selection bit/ and it informs if the bytes to be sent are commands or data to RAM. The value ~0~ means that a command should be sent and the value ~1~ represents data to be sent to RAM.
+4. After that *commands* or *data bytes* can be sent. Each command is one byte and it can have zero or more arguments(bytes).
+5. Finally, the operation is finished by a *stop condition*. The stop condition is established by pulling the ~SDA~ from low to high while the ~SCL~ stays high.
+
+Note that there is one method to each of the above steps.
+
+****** Sending a command
+Let's say that we want to send a command to turn on the display. This command has the code ~0xAF~ and it doesn't have any argument:
+#+BEGIN_SRC
+  ssd1306::i2c dev{pb0, pb2};
+
+  dev.start_condition();
+  dev.send_slave_addr();
+  dev.send_ctrl_byte(dc::command);
+  dev.send_byte(0xaf);
+  dev.stop_condition();
+#+END_SRC
+
+Take a moment to compare each call of the snippet above with the one in the previous section.
+
+****** Sending a data byte to the GDDRAM
+Each data byte represents one column of a specific page. Each bit represents a dot(or a pixel) and the MSB is on the bottom of the column and the LSB on the top.
+
+Let's say that we want to send a vertical line with 4 pixels located at the top of the column. Each byte represents a column of one page and each column has 8 pixels. So, the byte ~0x0F~ has a high nibble equal to ~0b0000~ that represent the bottom part of the column and the low nibble ~0b1111~ represents the top part of the column. It's important to note that the page and column position should be defined by commands before the data is sent:
+
+#+BEGIN_SRC
+  //        SEGY(ColumnY)
+  //  PAGEX |1| LSB
+  //        |1|
+  //        |1|
+  //        |1|
+  //        |0|
+  //        |0|
+  //        |0|
+  //        |0| MSB
+
+  ssd1306::i2c dev{pb0, pb2};
+
+  dev.start_condition();
+  dev.send_slave_addr();
+  dev.send_ctrl_byte(dc::data);
+  dev.send_byte(0x0f);
+  dev.stop_condition();
+#+END_SRC
+
+Compare the snippet above with the previous one, note that the only difference is the configuration of the control byte and the data that is sent.
+
+If you don't know what is a page, a column, a SEG and so on, then I think that it's a good to time to open the datasheet in the section ~8.7 Graphic Display Data RAM (GDDRAM)~.
+
+***** Hi
+The [[file:demo/i2c/hi.cpp][demo/i2c/hi.cpp]] is a "hello world" that outputs the word ~hi~ using a 128x64 display. In order to print something is important to be aware that a minimal set of commands should be passed to the device's driver to inform it about some physical configurations of the display, take a look below to the first three commands to see an example.
+
+#+BEGIN_SRC
+#include <avr/io.hpp>
+#include <avr/pgmspace.h>
+#include <ssd1306.hpp>
+
+using namespace avr::io;
+using namespace ssd1306;
+
+/** This demos is a "hello world" that setups a display with 128x64
+    dots with some basic commands and after that erases the content of
+    the whole screen to print the string 'hi'.
+*/
+
+static const uint8_t cmds[] [[gnu::__progmem__]] = {
+    /** Commands to inform the driver what is the physical
+        configuration of the display. Note that your display can be
+        different, take a look at the secton 10.1.18 of the datasheet
+        with the result on the screen is weird. 
+    */
+    0xC8, /** COM Output Scan Direction*/ 
+    0xDA, 0x12, /** COM Pins Hardware Configuration*/ 
+    0xA1, /** Segment Re-map */
+    
+    0x20, 0, /** Horizontal Addressing Mode*/ 
+    0x22, 0, 7, /** Set page address: 0 to 7*/  
+    0x21, 0, 127, /** Set column address: 0 to 127*/
+    
+    0x8D, 0x14, /** Enable Charge Pump*/
+    
+    0xAF, /** Turn on the display */
+};
+
+static const uint8_t letter_h[] [[gnu::__progmem__]] = {
+    /**
+       Draw of the letter 'h':
+
+       0b10000000, LSB
+       0b10000000,
+       0b10111000,
+       0b11000100,
+       0b10000100,
+       0b10000100,
+       0b10000100,
+       0b10000100, MSB
+
+       Each byte below represents one column from left to right. The
+       LSB is on the top and the MSB in on the bottom.
+    */
+    0xff, 0x08, 0x04, 0x04, 0x04, 0xf8, 0x00, 0x00
+};
+
+static const uint8_t letter_i[] [[gnu::__progmem__]] = {
+    /**
+       Draw of the letter 'i':
+
+       0b00010000, LSB
+       0b00000000,
+       0b00110000,
+       0b00010000,
+       0b00010000,
+       0b00010000,
+       0b00010000,
+       0b00011000, MSB
+        
+       Each byte below represents one column from left to right. The
+       LSB is on the top and the MSB in on the bottom.
+    */
+    0x00, 0x00, 0x04, 0xfd, 0x80, 0x00, 0x00, 0x00
+};
+
+int main() {
+    ssd1306::i2c dev{pb0, pb2};
+
+    /** setup the display */
+    dev.start_commands();
+    for(uint8_t i{0}; i < sizeof(cmds); ++i)
+        dev.send_byte(pgm_read_byte(&cmds[i]));
+    dev.stop_condition();
+
+    /** clear the whole screen */
+    dev.start_data();
+    for(uint16_t i{0}; i < 128 * 8; ++i)
+        dev.send_byte(0x00);
+    dev.stop_condition();
+
+    /** print 'hi' at page 0 and column 0 */
+    dev.start_data();
+    
+    //send letter 'h'
+    for(uint8_t i{0}; i < 8; ++i)
+        dev.send_byte(pgm_read_byte(&letter_h[i]));
+    
+    //send letter 'i'
+    for(uint8_t i{0}; i < 8; ++i)
+        dev.send_byte(pgm_read_byte(&letter_i[i]));
+    
+    dev.stop_condition();
+    
+    while(true);
+}
+#+END_SRC
+
+**** [TODO]
+1. Support features like ~USI~ to send bytes. [optimization]
+
+*** Performance
+[[file:demo/i2c/send_command_low_level.cpp][demo/i2c/send_command_low_level.cpp]]
+#+BEGIN_SRC
+    ssd1306::i2c dev{pb0, pb2};
+    dev.start_condition();
+    dev.send_slave_addr();
+    dev.send_ctrl_byte(dc::command);
+    dev.send_byte(0xaf);
+    dev.stop_condition();
+
+/** generated code using avr-gcc 10.2 -Os -mmcu=attiny13a
+00000022 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>:
+  22:	c2 98       	cbi	0x18, 2	; 24
+  24:	98 e0       	ldi	r25, 0x08	; 8
+  26:	c0 98       	cbi	0x18, 0	; 24
+  28:	87 fd       	sbrc	r24, 7
+  2a:	c0 9a       	sbi	0x18, 0	; 24
+  2c:	88 0f       	add	r24, r24
+  2e:	c2 9a       	sbi	0x18, 2	; 24
+  30:	c2 98       	cbi	0x18, 2	; 24
+  32:	91 50       	subi	r25, 0x01	; 1
+  34:	c1 f7       	brne	.-16     	; 0x26 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh+0x4>
+  36:	c2 9a       	sbi	0x18, 2	; 24
+  38:	c2 98       	cbi	0x18, 2	; 24
+  3a:	08 95       	ret
+
+  3c:	b8 9a       	sbi	0x17, 0	; 23
+  3e:	ba 9a       	sbi	0x17, 2	; 23
+  40:	c0 98       	cbi	0x18, 0	; 24
+  42:	88 e7       	ldi	r24, 0x78	; 120
+  44:	ee df       	rcall	.-36     	; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
+  46:	80 e0       	ldi	r24, 0x00	; 0
+  48:	ec df       	rcall	.-40     	; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
+  4a:	8f ea       	ldi	r24, 0xAF	; 175
+  4c:	ea df       	rcall	.-44     	; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
+  4e:	c2 9a       	sbi	0x18, 2	; 24
+  50:	c0 9a       	sbi	0x18, 0	; 24
+*/
+#+END_SRC
+
+*** How to use it?
+This is a header only library. It should be enough add the path to the ~include~ directory to your project:
+1. Add the ~include~ directory to your include path.
+2. Add ~#include <ssd1306.hpp>~ to your source and enjoy it!
+
+*** Supported MCUs
+1. ATtiny13A/13
+2. ATtiny25/45/85
+3. ATmega328P
+
+*** Requirements and dependencies
+1. ~avr-gcc~ with at least ~-std=c++11~ (Tests with ~avr-gcc 10.2~)
+2. This library is designed with the optimization ~-Os~ in mind.
+3. [[https://github.com/ricardocosme/avrIO][avrIO]]
