@@ -8,7 +8,7 @@ The abstraction ~ssd1306::i2c~ located at [[file:include/ssd1306/i2c.hpp][ssd130
 ~i2c~ needs to know three things to open a communication with the device: the pin that represents the bus data signal ~SDA~, the one that represents the bus clock signal ~SCL~ and the ~SA0~ bit that is the slave address of the device, the default value of it is ~0~. 
 
 For example, the following line represents a display with the ~SDA~ connected to ~PB0~, ~SCL~ connected to ~PB2~ and with the ~SA0~ equal to ~0~:
-#+BEGIN_SRC
+#+BEGIN_SRC C++
   ssd1306::i2c dev{pb0, pb2};
 #+END_SRC
 
@@ -32,7 +32,7 @@ Note that there is one method to each of the above steps.
 
 ****** Sending a command
 Let's say that we want to send a command to turn on the display. This command has the code ~0xAF~ and it doesn't have any argument:
-#+BEGIN_SRC
+#+BEGIN_SRC C++
   ssd1306::i2c dev{pb0, pb2};
 
   dev.start_condition();
@@ -49,7 +49,7 @@ Each data byte represents one column of a specific page. Each bit represents a d
 
 Let's say that we want to send a vertical line with 4 pixels located at the top of the column. Each byte represents a column of one page and each column has 8 pixels. So, the byte ~0x0F~ has a high nibble equal to ~0b0000~ that represent the bottom part of the column and the low nibble ~0b1111~ represents the top part of the column. It's important to note that the page and column position should be defined by commands before the data is sent:
 
-#+BEGIN_SRC
+#+BEGIN_SRC C++
   //        SEGY(ColumnY)
   //  PAGEX |1| LSB
   //        |1|
@@ -76,7 +76,7 @@ If you don't know what is a page, a column, a SEG and so on, then I think that i
 ***** Hi
 The [[file:demo/i2c/hi.cpp][demo/i2c/hi.cpp]] is a "hello world" that outputs the word ~hi~ using a 128x64 display. In order to print something is important to be aware that a minimal set of commands should be passed to the device's driver to inform it about some physical configurations of the display, take a look below to the first three commands to see an example.
 
-#+BEGIN_SRC
+#+BEGIN_SRC C++
 #include <avr/io.hpp>
 #include <avr/pgmspace.h>
 #include <ssd1306.hpp>
@@ -183,7 +183,7 @@ int main() {
 
 *** Performance
 [[file:demo/i2c/send_command_low_level.cpp][demo/i2c/send_command_low_level.cpp]]
-#+BEGIN_SRC
+#+BEGIN_SRC C++
 ssd1306::i2c dev{pb0, pb2};
 dev.start_condition();
 dev.send_slave_addr();
