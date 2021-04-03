@@ -193,31 +193,31 @@ int main() {
 
 /** generated code using avr-gcc 10.2 -Os -mmcu=attiny13a
 00000022 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>:
-  22:	c2 98       	cbi	0x18, 2	; 24
-  24:	98 e0       	ldi	r25, 0x08	; 8
-  26:	c0 98       	cbi	0x18, 0	; 24
-  28:	87 fd       	sbrc	r24, 7
-  2a:	c0 9a       	sbi	0x18, 0	; 24
-  2c:	88 0f       	add	r24, r24
-  2e:	c2 9a       	sbi	0x18, 2	; 24
-  30:	c2 98       	cbi	0x18, 2	; 24
-  32:	91 50       	subi	r25, 0x01	; 1
-  34:	c1 f7       	brne	.-16     	; 0x26 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh+0x4>
-  36:	c2 9a       	sbi	0x18, 2	; 24
-  38:	c2 98       	cbi	0x18, 2	; 24
-  3a:	08 95       	ret
+  22:	cbi	0x18, 2	; 24
+  24:	ldi	r25, 0x08	; 8
+  26:	cbi	0x18, 0	; 24
+  28:	sbrc	r24, 7
+  2a:	sbi	0x18, 0	; 24
+  2c:	add	r24, r24
+  2e:	sbi	0x18, 2	; 24
+  30:	cbi	0x18, 2	; 24
+  32:	subi	r25, 0x01	; 1
+  34:	brne	.-16		; 0x26 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh+0x4>
+  36:	sbi	0x18, 2	; 24
+  38:	cbi	0x18, 2	; 24
+  3a:	ret
 
-  3c:	b8 9a       	sbi	0x17, 0	; 23
-  3e:	ba 9a       	sbi	0x17, 2	; 23
-  40:	c0 98       	cbi	0x18, 0	; 24
-  42:	88 e7       	ldi	r24, 0x78	; 120
-  44:	ee df       	rcall	.-36     	; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
-  46:	80 e0       	ldi	r24, 0x00	; 0
-  48:	ec df       	rcall	.-40     	; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
-  4a:	8f ea       	ldi	r24, 0xAF	; 175
-  4c:	ea df       	rcall	.-44     	; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
-  4e:	c2 9a       	sbi	0x18, 2	; 24
-  50:	c0 9a       	sbi	0x18, 0	; 24
+  3c:	sbi	0x17, 0	; 23
+  3e:	sbi	0x17, 2	; 23
+  40:	cbi	0x18, 0	; 24
+  42:	ldi	r24, 0x78	; 120
+  44:	rcall	.-36		; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
+  46:	ldi	r24, 0x00	; 0
+  48:	rcall	.-40		; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
+  4a:	ldi	r24, 0xAF	; 175
+  4c:	rcall	.-44		; 0x22 <_ZN7ssd13063i2cIN3avr2io3pxnINS2_3regILh56EEENS4_ILh54EEENS4_ILh55EEELh0EEENS3_IS5_S6_S7_Lh2EEENS_3sa05off_tEE9send_byteEh>
+  4e:	sbi	0x18, 2	; 24
+  50:	sbi	0x18, 0	; 24
 */
 #+END_SRC
 
@@ -227,6 +227,9 @@ This is a header only library. It should be enough add the path to the ~include~
 2. Add ~#include <ssd1306.hpp>~ to your source and enjoy it!
 
 *** Supported MCUs
+At first I don't see any restriction to a specific chip, but I just tested it with the MCUs below.
+
+**** Tested on
 1. ATtiny13A/13
 2. ATtiny25/45/85
 3. ATmega328P
