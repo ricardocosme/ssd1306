@@ -31,7 +31,7 @@ static const uint8_t cmds[] [[gnu::__progmem__]] = {
 
 static const uint8_t letter_h[] [[gnu::__progmem__]] = {
     /**
-       Draw of the letter 'h':
+       Bitmap of the letter 'h':
 
        0b10000000, LSB
        0b10000000,
@@ -50,7 +50,7 @@ static const uint8_t letter_h[] [[gnu::__progmem__]] = {
 
 static const uint8_t letter_i[] [[gnu::__progmem__]] = {
     /**
-       Draw of the letter 'i':
+       Bitmap of the letter 'i':
 
        0b00010000, LSB
        0b00000000,

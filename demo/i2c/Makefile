@@ -3,7 +3,7 @@ dev=t13
 std=c++17
 avr_io_inc=../../../avrIO/include
 
-all: hi.elf send_command_low_level.elf send_data_to_ram_low_level.elf 
+all: hi.elf send_command_low_level.elf send_data_to_ram_low_level.elf bitmap_to_gddram.elf
 
 %.elf: %.cpp
 	avr-g++ -Os -std=$(std) -mmcu=$(mcu) -o $@ $< \
