@@ -1,10 +1,10 @@
 ** SSD1306
 It's a C++11/17 driver to operate the [[file:datasheet.pdf][SSD1306 OLED]] using the I2C interface. This library offers a low level API [[file:include/ssd1306/i2c.hpp][ssd1306/i2c.hpp]] with a basic set of functions that allows any operation on the device. One goal of this work is to provide high level abstractions built on top of the low level API, watch this repository if you're interested on this, it's a ongoing working that is happening now.
 
-**** Low level API (i2c)
+*** Low level API (i2c)
 The abstraction ~ssd1306::i2c~ located at [[file:include/ssd1306/i2c.hpp][ssd1306/i2c.hpp]] is a representation of a communication interface using I2C. The protocol is described in the section ~8.1.5 MCU I2C Interface~ of the datasheet. 
 
-***** How it works?
+**** How it works?
 ~i2c~ needs to know three things to open a communication with the device: the pin that represents the bus data signal ~SDA~, the one that represents the bus clock signal ~SCL~ and the ~SA0~ bit that is the slave address of the device, the default value of it is ~0~. 
 
 For example, the following line represents a display with the ~SDA~ connected to ~PB0~, ~SCL~ connected to ~PB2~ and with the ~SA0~ equal to ~0~:
@@ -19,7 +19,7 @@ There are five low level methods that allows any operation on the device: ~start
 
 And that is it. The section of the datasheet that describes the operations is well written but maybe the steps below can be more friendly to some people as a starting point.
 
-***** The protocol
+**** The protocol
 1. The first step is to initiate the communication by a *start condition*. The start condition is established by pulling the ~SDA~ from HIGH to LOW while the ~SCL~ stays HIGH.
 2. The second one is to send the *slave address* in conjuction with the read/write bit mode. The read/write bit is always ~0~ representing the write mode, the slave address is a fixed sequence of bits with only one bit named ~SA0~ to be defined. The default value is ~0~. So, in the end, there are two options of bytes to be sent to represent this step: ~0b01111000~ or ~0b01111010~. The bit#1 from the right to the left is the ~SA0~.
 3. The third step is to send a *control byte* to indicate if a command or a data to RAM is beign sent. The control byte has the following form: ~|co|dc|0|0|0|0|0|0|~. Where:
@@ -30,7 +30,7 @@ And that is it. The section of the datasheet that describes the operations is we
 
 Note that there is one method to each of the above steps.
 
-****** Sending a command
+**** Sending a command
 Let's say that we want to send a command to turn on the display. This command has the code ~0xAF~ and it doesn't have any argument:
 #+BEGIN_SRC C++
   ssd1306::i2c dev{pb0, pb2};
@@ -44,7 +44,7 @@ Let's say that we want to send a command to turn on the display. This command ha
 
 Take a moment to compare each call of the snippet above with the one in the previous section.
 
-****** Sending a data byte to the GDDRAM
+**** Sending a data byte to the GDDRAM
 Each data byte represents one column of a specific page. Each bit represents a dot(or a pixel) and the MSB is on the bottom of the column and the LSB on the top.
 
 Let's say that we want to send a vertical line with 4 pixels located at the top of the column. Each byte represents a column of one page and each column has 8 pixels. So, the byte ~0x0F~ has a high nibble equal to ~0b0000~ that represent the bottom part of the column and the low nibble ~0b1111~ represents the top part of the column. It's important to note that the page and column position should be defined by commands before the data is sent:
@@ -73,7 +73,7 @@ Compare the snippet above with the previous one, note that the only difference i
 
 If you don't know what is a page, a column, a SEG and so on, then I think that it's a good to time to open the datasheet in the section ~8.7 Graphic Display Data RAM (GDDRAM)~.
 
-***** Hi
+**** Hi
 The [[file:demo/i2c/hi.cpp][demo/i2c/hi.cpp]] is a "hello world" that outputs the word ~hi~ using a 128x64 display. In order to print something is important to be aware that a minimal set of commands should be passed to the device's driver to inform it about some physical configurations of the display, take a look below to the first three commands to see an example.
 
 #+BEGIN_SRC C++
@@ -178,7 +178,7 @@ int main() {
 }
 #+END_SRC
 
-**** [TODO]
+*** [TODO]
 1. Support features like ~USI~ to send bytes. [optimization]
 
 *** Performance
