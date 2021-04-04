@@ -17,7 +17,6 @@ static const uint8_t cmds[] [[gnu::__progmem__]] = {
         with the result on the screen is weird. 
     */
     0xC8, /** COM Output Scan Direction*/ 
-    0xDA, 0x12, /** COM Pins Hardware Configuration*/ 
     0xA1, /** Segment Re-map */
     
     0x20, 0, /** Horizontal Addressing Mode*/ 
