@@ -73,7 +73,7 @@ Compare the snippet above with the previous one, note that the only difference i
 
 If you don't know what is a page, a column, a SEG and so on, then I think that it's a good to time to open the datasheet in the section ~8.7 Graphic Display Data RAM (GDDRAM)~.
 
-**** Hi
+**** Hello world
 The [[file:demo/i2c/hi.cpp][demo/i2c/hi.cpp]] is a "hello world" that outputs the word ~hi~ using a 128x64 display. In order to print something is important to be aware that a minimal set of commands should be passed to the device's driver to inform it about some physical configurations of the display, take a look below to the first three commands to see an example.
 
 #+BEGIN_SRC C++
