@@ -5,9 +5,9 @@
 using namespace avr::io;
 using namespace ssd1306;
 
-/** This demos is a "hello world" that setups a display with 128x64
-    dots with some basic commands and after that erases the content of
-    the whole screen to print the string 'hi'.
+/** This demo setups a display with 128x64 dots with some basic
+    commands and after that erases the content of the whole screen to
+    print a square of 8x8 pixels.
 */
 
 static const uint8_t cmds[] [[gnu::__progmem__]] = {
