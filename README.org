@@ -1,5 +1,5 @@
 ** SSD1306
-It's a C++11/17 driver to operate the [[file:datasheet.pdf][SSD1306 OLED]] using the I2C interface. This library offers a low level API [[file:include/ssd1306/i2c.hpp][ssd1306/i2c.hpp]] with a basic set of functions that allows any operation on the device. One goal of this work is to provide high level abstractions built on top of the low level API, watch this repository if you're interested on this, it's a ongoing working that is happening now.
+It's a C++11/17 driver to operate the [[file:datasheet.pdf][SSD1306 OLED]] using the I2C interface. This library offers a low level API [[file:include/ssd1306/i2c.hpp][ssd1306/i2c.hpp]] with a basic set of functions that allows any operation on the device. One goal of this work is to provide high level abstractions built on top of the low level API.
 
 *** Low level API (i2c)
 The abstraction ~ssd1306::i2c~ located at [[file:include/ssd1306/i2c.hpp][ssd1306/i2c.hpp]] is a representation of a communication interface using I2C. The protocol is described in the section ~8.1.5 MCU I2C Interface~ of the datasheet. 
