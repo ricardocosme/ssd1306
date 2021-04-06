@@ -37,54 +37,65 @@ constexpr static auto left_bottom = 1<<4;
 constexpr static auto right_bottom = 1<<5;
 constexpr static auto bottom = 1<<6;
 
-template<typename I2C>
-void send_digit(I2C& i2c, uint8_t segments, uint8_t size) {
-    for(uint8_t col{0}; col < 17; ++col) {
-        if(col < 2) {
-            for(uint8_t i{}; i < size; ++i) {
-                if(segments & left_top) {
-                    i2c.send_byte(0xff);
-                } else i2c.send_byte(0x00);
-            }
-            for(uint8_t i{}; i < size; ++i) {
-                if(segments & left_bottom) {
-                    i2c.send_byte(0xff);
-                } else i2c.send_byte(0x00);
-            }
-        } else if(col > 2 && col < 14) {
-            if(segments & top) {
-                i2c.send_byte(0x03);
-            } else {
-                i2c.send_byte(0x00);
-            } 
-            if(segments & middle) {
-                i2c.send_byte(0x80);
-                i2c.send_byte(0x01);
-            } else {
-                i2c.send_byte(0x00); 
-                i2c.send_byte(0x00);
-            }
-            if(segments & bottom) i2c.send_byte(0xc0);
-            else i2c.send_byte(0x00);
-        } else if(col > 14 && col < 17) {
-            for(uint8_t i{}; i < size; ++i) {
-                if(segments & right_top) {
-                    i2c.send_byte(0xff);
-                } else i2c.send_byte(0x00);
-            }
-            for(uint8_t i{}; i < size; ++i) {
-                if(segments & right_bottom) {
-                    i2c.send_byte(0xff);
-                } else i2c.send_byte(0x00);
-            }
-        }
-    }
-    for(uint8_t i{}; i < 3 * 4; ++i) {
-        i2c.send_byte(0x00);
-    }
+template<int pages, typename I2C>
+inline void draw_column(I2C& i2c, uint8_t b) {
+    for(uint8_t i{}; i < pages / 2; ++i)
+        i2c.send_byte(b);
 }
 
-template<typename I2C> 
+template<uint8_t width, uint8_t height, uint8_t spacing, typename I2C>
+void send_digit_segmented(I2C& i2c, uint8_t segments)
+{
+    static_assert(width >= 12 && width <= 64);
+    static_assert(height % 16 == 0);
+    static_assert(height >= 16 && height <= 64);
+    constexpr auto pages = height / 8;
+    for(uint8_t col{0}; col < width; ++col) {
+        if(col < 2) {
+            if(segments & left_top) draw_column<pages>(i2c, 0xff);
+            else draw_column<pages>(i2c, 0x00);
+            if(segments & left_bottom) draw_column<pages>(i2c, 0xff);
+            else draw_column<pages>(i2c, 0x00);
+        } else if(col >= 2 && col < (width - 2)) {
+            if(pages == 2) {
+                if(segments & top) {
+                    if(segments & middle) i2c.send_byte(0x83);
+                    else i2c.send_byte(0x03);
+                } else {
+                    if(segments & middle) i2c.send_byte(0x80);
+                    else i2c.send_byte(0x00);
+                }
+                if(segments & bottom) {
+                    if(segments & middle) i2c.send_byte(0xc1);
+                    else i2c.send_byte(0xc0);
+                } else {
+                    if(segments & middle) i2c.send_byte(0x01);
+                    else i2c.send_byte(0x00);
+                }
+            } else {
+                if(segments & top) i2c.send_byte(0x03);
+                else i2c.send_byte(0x00);
+                if(segments & middle) {
+                    draw_column<pages - 4>(i2c, 0x00);
+                    i2c.send_byte(0x80);
+                    i2c.send_byte(0x01);
+                } else draw_column<pages>(i2c, 0x00);
+                draw_column<pages - 4>(i2c, 0x00);
+                if(segments & bottom) i2c.send_byte(0xc0);
+                else i2c.send_byte(0x00);
+            }
+        } else if(col >= (width - 2) && col < width) {
+            if(segments & right_top) draw_column<pages>(i2c, 0xff);
+            else draw_column<pages>(i2c, 0x00);
+            if(segments & right_bottom) draw_column<pages>(i2c, 0xff);
+            else draw_column<pages>(i2c, 0x00);
+        }
+    }
+    for(uint8_t i{}; i < spacing * pages; ++i)
+        i2c.send_byte(0x00);
+}
+
+template<uint8_t width, uint8_t height, uint8_t spacing, typename I2C> 
 inline void send_digit(I2C& dev, uint8_t i) {
     uint8_t segments;
     if(i == 0)
@@ -101,7 +112,7 @@ inline void send_digit(I2C& dev, uint8_t i) {
     else if(i == 5)
         segments = top | left_top | middle | right_bottom | bottom;
     else if(i == 6)
-        segments = left_top | middle | left_bottom | bottom | right_bottom;
+        segments = top | left_top | middle | left_bottom | bottom | right_bottom;
     else if(i == 7)
         segments = top | right_top | right_bottom;
     else if(i == 8)
@@ -109,17 +120,17 @@ inline void send_digit(I2C& dev, uint8_t i) {
             | right_bottom | bottom;
     else if(i == 9)
         segments = left_top | top | right_top | middle | right_bottom | bottom;
-    send_digit(dev, segments, 2);
+    send_digit_segmented<width, height, spacing>(dev, segments);
 }
 
-template<typename I2C> 
+template<uint8_t w, uint8_t h, uint8_t spacing = 5, typename I2C> 
 inline void send_int(I2C& dev, uint8_t i) {
     if(i < 10) {
-        send_digit(dev, i);
+        send_digit<w, h, spacing>(dev, i);
         return;
     }
-    send_int(dev, i / 10);
-    send_int(dev, i % 10);
+    send_int<w, h, spacing>(dev, i / 10);
+    send_int<w, h, spacing>(dev, i % 10);
 }
 
 int main() {
@@ -136,14 +147,14 @@ int main() {
     for(uint16_t i{0}; i < 128 * 8; ++i)
         dev.send_byte(0x00);
     dev.stop_condition();
-
+    
     dev.start_commands();
     dev.send_byte(0x22);
-    dev.send_byte(2);
-    dev.send_byte(5);
+    dev.send_byte(4);
+    dev.send_byte(7);
     dev.stop_condition();
     
-    for(uint8_t i{}; i < 255; ++i) {
+    for(uint8_t n{};;++n) {
         dev.start_commands();
         dev.send_byte(0x21);
         dev.send_byte(0);
@@ -151,10 +162,9 @@ int main() {
         dev.stop_condition();
         
         dev.start_data();
-        send_int(dev, i);
+        send_int<20, 32, 5>(dev, n);
         dev.stop_condition();
+        
         _delay_ms(500);
     }
-    
-    while(true);
 }
