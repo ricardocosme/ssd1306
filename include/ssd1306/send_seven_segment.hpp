@@ -62,6 +62,9 @@ constexpr static auto _8 = seven_segment
 constexpr static auto _9 = seven_segment
 { left_top | top | right_top | middle | right_bottom | bottom };
 
+//hyphen '-'
+constexpr static auto hyphen = seven_segment{middle};
+
 //letter i
 constexpr static auto i = seven_segment{right_bottom};
 
@@ -161,19 +164,29 @@ void send_digit(I2C&& dev, uint8_t i) {
     else if(i == 6) digit = segments::_6;
     else if(i == 7) digit = segments::_7;
     else if(i == 8) digit = segments::_8;
-    else if(i == 9) digit = segments::_9;
+    else  digit = segments::_9;
     
     send_digit_segmented<width, height, spacing>(dev, digit.segments);
 }
 
 template<uint8_t w, uint8_t h, uint8_t spacing = 5, typename I2C> 
-void send_int(I2C&& dev, uint8_t i) {
+uint8_t send_int(I2C&& dev, uint8_t i) {
     if(i < 10) {
         send_digit<w, h, spacing>(dev, i);
-        return;
+        return 1;
     }
-    send_int<w, h, spacing>(dev, i / 10);
-    send_int<w, h, spacing>(dev, i % 10);
+    auto d = send_int<w, h, spacing>(dev, uint8_t(i / 10));
+    return send_int<w, h, spacing>(dev, uint8_t(i % 10)) + d;
+}
+
+template<uint8_t w, uint8_t h, uint8_t spacing = 5, typename I2C> 
+uint8_t send_int(I2C&& dev, uint32_t i) {
+    if(i < 10) {
+        send_digit<w, h, spacing>(dev, i);
+        return 1;
+    }
+    auto d = send_int<w, h, spacing>(dev, i / 10);
+    return send_int<w, h, spacing>(dev, i % 10) + d;
 }
 
 }
